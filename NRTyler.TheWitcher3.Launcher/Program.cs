@@ -5,7 +5,7 @@
 // Created          : 05-02-2018
 //
 // Last Modified By : Nicholas Tyler
-// Last Modified On : 05-08-2018
+// Last Modified On : 05-10-2018
 //
 // License          : MIT License
 // ***********************************************************************
@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 
 namespace NRTyler.TheWitcher3.Launcher
 {
@@ -37,17 +36,19 @@ namespace NRTyler.TheWitcher3.Launcher
 
             CloseScripts(scriptIDs);
 
-            CloseAfterElapsedTime(10);
-            CloseApplication(true);
+            AppTerminator.CloseAfterElapsedTime(TimeSpan.FromSeconds(10), true);
+            AppTerminator.CloseApplication(true);
         }
 
+        /// <summary>
+        /// Grabs the scripts to load from the ScriptsToLoad.xml file.
+        /// </summary>
         private static ScriptContainer GrabScriptsToLoad()
         {
             var currentDirectory = Environment.CurrentDirectory;
             var containerName    = ApplicationSettings.ScriptContainerName;
 
             var scriptContainerRepo = new ScriptContainerRepo();
-
 
             if (!File.Exists($"{currentDirectory}/{containerName}.xml"))
             {
@@ -76,13 +77,15 @@ namespace NRTyler.TheWitcher3.Launcher
 
             foreach (var scriptName in scriptNames)
             {
-                Write($"Starting script: {scriptName.Trim()}");
+                var trimedScriptName = scriptName.Trim();
+
+                Write($"Starting script: {trimedScriptName}");
 
                 var process = new Process()
                 {
                     StartInfo =
                     {
-                        FileName       = $"{currentDirectory}/{scriptFolderName}/{scriptName.Trim()}",
+                        FileName = $"{currentDirectory}/{scriptFolderName}/{trimedScriptName}",
                         CreateNoWindow = true
                     }
                 };
@@ -157,56 +160,6 @@ namespace NRTyler.TheWitcher3.Launcher
                 ? $"Ended {processesEnded} script."
                 : $"Ended {processesEnded} scripts.");
             Write();
-        }
-
-        /// <summary>
-        /// Closes the current application after the specified amount of time has passed.
-        /// </summary>
-        /// <param name="seconds">
-        /// The amount of seconds that should pass before the current application is automatically closed.
-        /// </param>
-        private static void CloseAfterElapsedTime(int seconds)
-        {
-            var autoCloseThread = new Thread(AutoClose);   
-            autoCloseThread.Start();
-
-            // The logic that closes the application after the specified amount of time has passed.
-            void AutoClose()
-            {
-                var stopwatch = new Stopwatch();
-
-                stopwatch.Start();
-
-                while (stopwatch.IsRunning)
-                {
-                    if (stopwatch.Elapsed.Seconds >= seconds)
-                    {
-                        CloseApplication(false);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Closes the current application.
-        /// </summary>
-        /// <param name="waitForKeyPress">
-        /// If set to <see langword="true"/>, the classic "Press any key to continue..." dialog will appear before the console is closed.
-        /// </param>
-        private static void CloseApplication(bool waitForKeyPress)
-        {
-            var currentProcess = Process.GetCurrentProcess();
-
-            if (waitForKeyPress)
-            {
-                Console.Write("Press any key to continue . . . ");
-                Console.ReadKey(true);
-            }
-
-            using (currentProcess)
-            {
-                currentProcess.CloseMainWindow();
-            }
         }
 
         private static void Write(object obj = null)
