@@ -15,6 +15,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using NRTyler.CodeLibrary.Extensions;
+using NRTyler.CodeLibrary.Utilities;
 
 namespace NRTyler.TheWitcher3.Launcher
 {
@@ -32,9 +34,14 @@ namespace NRTyler.TheWitcher3.Launcher
             Write("This application, if left open, will end all scripts that were started once you close the game.");
             Write();
 
-            process.WaitForExit();
+            if (!process.HasExited)
+            {
+                process.WaitForExit();
+            }
 
             CloseScripts(scriptIDs);
+            
+            LaunchBackupCreator();
 
             AppTerminator.CloseAfterElapsedTime(TimeSpan.FromSeconds(10), true);
             AppTerminator.CloseApplication(true);
@@ -162,9 +169,39 @@ namespace NRTyler.TheWitcher3.Launcher
             Write();
         }
 
+        private static void LaunchBackupCreator()
+        {
+            var currentDirectory = DirectoryEx.GetExecutingDirectory().FullName;
+            var creatorDirectory = $"{currentDirectory}/BackupCreator/The Witcher 3 Backup Creator.exe";
+
+            var process = new Process()
+            {
+                StartInfo =
+                {
+                    FileName       = $"{creatorDirectory}",
+                    CreateNoWindow = false
+                }
+            };
+
+            process.Start();
+
+            // Removes the possibility of stopping the backup prematurely.
+            if (!process.HasExited)
+            {
+                process.WaitForExit();
+            }
+        }
+
+        #region Shorthand Aliases for Other Methods
+
+        /// <summary>
+        /// A shorthand alias for the "<see cref="Console.WriteLine()"/>" method.
+        /// </summary>
         private static void Write(object obj = null)
         {
             Console.WriteLine(obj);
-        }
+        } 
+
+        #endregion
     }
 }
